@@ -4,11 +4,13 @@ import { REST, Routes } from 'discord.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
+const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN
+const APPLICATION_CLIENTID = process.env.APPLICATION_CLIENTID
+const SERVER_GUILDID = process.env.SERVER_GUILDID
 
 const commands = [];
 const commandsPath = path.join(process.cwd(), 'src', 'commands');
 
-// Lade Commands, wenn der Ordner existiert
 if (fs.existsSync(commandsPath)) {
   const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
@@ -30,15 +32,14 @@ if (fs.existsSync(commandsPath)) {
   console.warn('⚠️ Befehlsverzeichnis nicht gefunden!');
 }
 
-// Discord REST API für Slash Commands
-const rest = new REST().setToken(process.env.DISCORD_BOT_TOKEN);
+const rest = new REST().setToken(DISCORD_BOT_TOKEN);
 
 (async () => {
   try {
     console.log(`🔄 Starte das Aktualisieren von ${commands.length} Befehlen...`);
 
     const data = await rest.put(
-      Routes.applicationGuildCommands(process.env.APPLICATION_CLIENTID, process.env.SERVER_GUILDID),
+      Routes.applicationGuildCommands(APPLICATION_CLIENTID, SERVER_GUILDID),
       { body: commands },
     );
 

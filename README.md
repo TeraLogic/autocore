@@ -124,3 +124,25 @@ Falls du immer noch Probleme hast, öffne ein [GitHub Issue](https://github.com/
 ✔ **Anleitung für Sprachänderungen ist enthalten.** ✅  
 
 Falls du noch Anpassungen möchtest (z. B. extra Befehle oder Features in die README), sag Bescheid! 🚀😊
+
+
+** Bot server Leaven code
+
+client.once('ready', async () => {
+    console.log(`✅ Eingeloggt als ${client.user.tag}`);
+
+    const guild = client.guilds.cache.get(process.env.SERVER_GUILDID);
+    if (!guild) {
+        console.log("❌ Der Bot ist nicht auf diesem Server.");
+        return process.exit(1);
+    }
+
+    try {
+        await guild.leave();
+        console.log(`🚪 Der Bot hat den Server "${guild.name}" verlassen.`);
+    } catch (error) {
+        console.error("❌ Fehler beim Verlassen des Servers:", error);
+    }
+
+    process.exit(0);
+});

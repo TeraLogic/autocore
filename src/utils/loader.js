@@ -1,4 +1,5 @@
 import cliSpinners from "cli-spinners";
+import readline from 'readline';
 
 let loading = false;
 let spinnerIndex = 0;
