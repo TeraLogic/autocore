@@ -5,11 +5,14 @@ import { onReady } from './src/listeners/readyListener.js';
 import { loadCommands, handleCommandInteraction } from './src/listeners/commandHandler.js';
 import { setLanguage } from './src/utils/translationHandler.js';
 import { createOrFetchTicketMessage } from './src/server-build/serverSetup.js';
+import { setLoading, log } from './src/utils/loader.js'
 
 dotenv.config();
 
 const botLanguage = process.env.LANGUAGE || 'default';
 setLanguage(botLanguage);
+
+setLoading(true, "⚙️ Starte Bot...");
 
 const client = new Client({
     intents: [
@@ -23,6 +26,8 @@ const client = new Client({
 });
 
 client.commands = new Collection();
+
+setLoading(false)
 
 client.once('ready', async () => {
     await onReady(client);
