@@ -1,4 +1,4 @@
-import cliSpinners from "cli-spinners";
+import cliSpinners from 'cli-spinners';
 import readline from 'readline';
 
 let loading = false;
@@ -7,30 +7,30 @@ const spinnerFrames = cliSpinners.dots.frames;
 let currentMessage = '';
 
 function renderSpinner() {
-    if (!loading) return;
+  if (!loading) return;
 
-    readline.clearLine(process.stdout, 0);
-    readline.cursorTo(process.stdout, 0);
+  readline.clearLine(process.stdout, 0);
+  readline.cursorTo(process.stdout, 0);
 
-    process.stdout.write(`${spinnerFrames[spinnerIndex]} ${currentMessage}`);
+  process.stdout.write(`${spinnerFrames[spinnerIndex]} ${currentMessage}`);
 
-    spinnerIndex = (spinnerIndex + 1) % spinnerFrames.length;
+  spinnerIndex = (spinnerIndex + 1) % spinnerFrames.length;
 
-    setTimeout(renderSpinner, cliSpinners.dots.interval);
+  setTimeout(renderSpinner, cliSpinners.dots.interval);
 }
 
-export function setLoading(state, message = "Lädt...") {
-    loading = state;
-    currentMessage = message;
-    
-    if (loading) {
-        renderSpinner();
-    } else {
-        readline.clearLine(process.stdout, 0);
-        readline.cursorTo(process.stdout, 0);
-    }
+export function setLoading(state, message = 'Lädt...') {
+  loading = state;
+  currentMessage = message;
+
+  if (loading) {
+    renderSpinner();
+  } else {
+    readline.clearLine(process.stdout, 0);
+    readline.cursorTo(process.stdout, 0);
+  }
 }
 
 export function log(message) {
-    currentMessage = message;
+  currentMessage = message;
 }

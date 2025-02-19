@@ -7,11 +7,10 @@
   "scripts": {
     "dev": "pnpm exec nodemon index.js",
     "start": "node index.js",
-    "build": "pnpm exec esbuild index.js --bundle --outfile=dist/index.js",
-    "prod": "pnpm run deploy-commands && node dist/index.js",
+    "build": "pnpm exec esbuild index.js --bundle --platform=node --outfile=dist/index.js",
+    "prod": "pnpm run build && pnpm run deploy-commands && node dist/index.js",
     "deploy-commands": "pnpm exec node src/deploy-commands.js",
     "format": "pnpm exec prettier --write .",
-    "lint": "pnpm exec eslint . --fix",
     "clean": "rm -rf node_modules dist && pnpm install",
     "turbo": "pnpm exec turbo run"
   },
@@ -28,10 +27,7 @@
     "dotenv": "^16.4.7"
   },
   "devDependencies": {
-    "@eslint/js": "^9.20.0",
-    "eslint": "^9.20.1",
-    "eslint-config-prettier": "^10.0.1",
-    "eslint-plugin-unused-imports": "^4.1.4",
+    "@ianvs/prettier-plugin-sort-imports": "^4.4.1",
     "nodemon": "^3.1.9",
     "prettier": "^3.5.1",
     "turbo": "^2.4.2"

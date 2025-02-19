@@ -1,16 +1,15 @@
 {
-    "ticket": {
-      "message": "🎟️ **Reagiere mit dem Emoji, um ein Ticket zu erstellen.**",
-      "created": "✅ Dein Ticket wurde erfolgreich erstellt.",
-      "closed": "❌ Das Ticket wurde geschlossen."
-    },
-    "welcome": {
-      "message": "👋 Willkommen auf unserem Server! Schau dich um und hab Spaß."
-    },
-    "rules": {
-      "rule1": "🚫 Keine Beleidigungen oder toxisches Verhalten.",
-      "rule2": "📌 Halte dich an die Discord TOS.",
-      "rule3": "🔊 Nutze die Kanäle für den vorgesehenen Zweck."
-    }
+  "ticket": {
+    "message": "🎟️ **Reagiere mit dem Emoji, um ein Ticket zu erstellen.**",
+    "created": "✅ Dein Ticket wurde erfolgreich erstellt.",
+    "closed": "❌ Das Ticket wurde geschlossen."
+  },
+  "welcome": {
+    "message": "👋 Willkommen auf unserem Server! Schau dich um und hab Spaß."
+  },
+  "rules": {
+    "rule1": "🚫 Keine Beleidigungen oder toxisches Verhalten.",
+    "rule2": "📌 Halte dich an die Discord TOS.",
+    "rule3": "🔊 Nutze die Kanäle für den vorgesehenen Zweck."
   }
-  
+}

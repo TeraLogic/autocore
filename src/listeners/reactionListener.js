@@ -1,7 +1,6 @@
 import { ChannelType, PermissionFlagsBits } from 'discord.js';
 import { ticketConfig } from '../config/ticketConfig.js';
 
-
 export function setupReactionListener(client) {
   client.on('messageReactionAdd', async (reaction, user) => {
     try {
@@ -51,7 +50,9 @@ export function setupReactionListener(client) {
         ],
       });
 
-      console.log(`✅ Ticket-Channel für ${user.username} erstellt: ${ticketChannel.name}`);
+      console.log(
+        `✅ Ticket-Channel für ${user.username} erstellt: ${ticketChannel.name}`
+      );
 
       const ticketMessage = await ticketChannel.send(
         `👋 Hallo ${user}, ein Support-Mitarbeiter wird sich bald melden!\n\n📩 **Reagiere mit 🎟️, um das Ticket zu schließen.**`
@@ -65,4 +66,3 @@ export function setupReactionListener(client) {
     }
   });
 }
-

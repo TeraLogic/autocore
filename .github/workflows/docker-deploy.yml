@@ -27,4 +27,3 @@ jobs:
       - name: Push Docker Image to Docker Hub
         run: |
           docker push siggi9/discord-bot:latest
-

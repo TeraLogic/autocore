@@ -4,5 +4,9 @@
   "singleQuote": true,
   "printWidth": 80,
   "tabWidth": 2,
-  "useTabs": false
+  "useTabs": false,
+  "importOrder": ["^node:.*", "^[a-zA-Z]", "^@/", "^[./]"],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true,
+  "prettier.ignorePath": ".prettierignore"
 }

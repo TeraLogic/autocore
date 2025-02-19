@@ -10,26 +10,26 @@ const botLanguage = process.env.LANGUAGE || 'default';
 setLanguage(botLanguage);
 
 const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds, 
-        GatewayIntentBits.GuildMessages, 
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildPresences,
-        GatewayIntentBits.GuildMessageReactions
-    ],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildPresences,
+    GatewayIntentBits.GuildMessageReactions,
+  ],
 });
 
 client.commands = new Collection();
 
 client.once(Events.ClientReady, async () => {
-    await onReady(client);
-})
+  await onReady(client);
+});
 
 client.on(Events.InteractionCreate, async (interaction) => {
-    await handleCommandInteraction(client, interaction);
+  await handleCommandInteraction(client, interaction);
 });
 
 client.login(process.env.DISCORD_BOT_TOKEN).catch((err) => {
-    console.error('❌ Fehler beim Login:', err);
+  console.error('❌ Fehler beim Login:', err);
 });
