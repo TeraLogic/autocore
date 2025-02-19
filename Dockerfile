@@ -2,9 +2,11 @@ FROM node:18-alpine
 
 WORKDIR /autocore
 
+RUN npm install -g pnpm@latest 
+
 COPY package.json ./
 
-RUN npm install -g pnpm && pnpm install
+RUN pnpm install
 
 COPY . .
 
