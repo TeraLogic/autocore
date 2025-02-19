@@ -1,6 +1,5 @@
 import { Client, GatewayIntentBits, Collection, Events } from 'discord.js';
 import dotenv from 'dotenv';
-import { onReady } from './src/listeners/readyListener.js';
 import { handleCommandInteraction } from './src/listeners/commandHandler.js';
 import { setLanguage } from './src/utils/translationHandler.js';
 
@@ -23,7 +22,7 @@ const client = new Client({
 client.commands = new Collection();
 
 client.once(Events.ClientReady, async () => {
-  await onReady(client);
+  await setupServer(client, process.env.SERVER_GUILDID);
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
