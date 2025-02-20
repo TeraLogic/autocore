@@ -1,0 +1,80 @@
+{
+  "role": {
+    "administrator": "",
+    "developer": "",
+    "designing": "",
+    "moderator": "",
+    "supporter": "",
+    "partner": "",
+    "freunde": "",
+    "vip": "",
+    "user": ""
+  },
+  "information": {
+    "category": {
+      "ID": null,
+      "NAME": "»› INFORMATION ‹«",
+      "TYPE": "4"
+    },
+    "channels": {
+      "announcements": {
+        "ID": null,
+        "NAME": "📢│announcements",
+        "TYPE": "0",
+        "message": {
+          "ID": null,
+          "MESSAGE": "Announcement test Text!"
+        }
+      },
+      "changelog": {
+        "ID": null,
+        "NAME": "🪛│changelog",
+        "TYPE": "0",
+        "message": {
+          "ID": null,
+          "MESSAGE": "test"
+        }
+      },
+      "partner": {
+        "ID": null,
+        "NAME": "🔗│partner",
+        "TYPE": "0",
+        "message": {
+          "ID": null,
+          "MESSAGE": "Willkommen im Partnerkanal! Hier findet ihr unsere Partner."
+        }
+      },
+      "ticketsupport": {
+        "ID": null,
+        "NAME": "🎫│ticket-support",
+        "TYPE": "0",
+        "REACTION": "🎟️",
+        "message": {
+          "ID": null,
+          "MESSAGE": "Reagiere mit 🎟️, um ein Support-Ticket zu eröffnen."
+        }
+      }
+    },
+    "permission": {
+      "readOnly": [
+        {
+          "ID": "",
+          "allow": [
+            "ViewChannel",
+            "ReadMessageHistory"
+          ],
+          "deny": [
+            "SendMessages",
+            "AddReactions",
+            "AttachFiles",
+            "EmbedLinks",
+            "ManageMessages",
+            "ManageChannels",
+            "UseApplicationCommands",
+            "CreateInstantInvite"
+          ]
+        }
+      ]
+    }
+  }
+}
