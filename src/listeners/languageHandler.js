@@ -1,5 +1,4 @@
 import { setLanguage } from '../utils/translationHandler.js';
-import { createOrFetchTicketMessage } from '../server-build/serverSetup.js';
 
 export async function handleLanguageCommand(client, message) {
   if (!message.guild || message.author.bot) return;

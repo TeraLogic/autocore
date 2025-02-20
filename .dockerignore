@@ -3,3 +3,5 @@ node_modules/
 pnpm-lock.yaml
 .git
 Dockerfile
+/src/config/setupConfig.json
+/src/config/saveConfig.json

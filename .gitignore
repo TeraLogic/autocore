@@ -1,5 +1,6 @@
 node_modules/
 .env
 pnpm-lock.yaml
-/src/config/ticketConfig.json
+/src/config/setupConfig.json
+/src/config/saveConfig.json
 dist

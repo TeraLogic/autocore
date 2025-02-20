@@ -1,7 +1,7 @@
 import { Client, GatewayIntentBits, Collection, Events } from 'discord.js';
 import dotenv from 'dotenv';
-import { handleCommandInteraction } from './src/listeners/commandHandler.js';
 import { setLanguage } from './src/utils/translationHandler.js';
+import { setupServer } from './src/server-build/serverSetup.js';
 
 dotenv.config();
 
@@ -19,14 +19,9 @@ const client = new Client({
   ],
 });
 
-client.commands = new Collection();
-
-client.once(Events.ClientReady, async () => {
-  await setupServer(client, process.env.SERVER_GUILDID);
-});
-
-client.on(Events.InteractionCreate, async (interaction) => {
-  await handleCommandInteraction(client, interaction);
+client.once('ready', async (client) => {
+  const guild = client.guilds.cache.get(process.env.SERVER_GUILDID);
+  await setupServer(guild, client);
 });
 
 client.login(process.env.DISCORD_BOT_TOKEN).catch((err) => {
