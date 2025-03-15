@@ -12,7 +12,7 @@ export async function setupServer(guild, client) {
     await setupInformation(guild);
 
     console.log(`✅ Server-Setup für ${guild.name} erfolgreich abgeschlossen!`);
-    
+
     setupReactionListener(client);
 
     console.log('🔄 Ticket-Listener erfolgreich gestartet!');

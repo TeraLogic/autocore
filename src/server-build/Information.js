@@ -5,7 +5,9 @@ let isRunning = false;
 
 export async function setupInformationCategory(guild) {
   if (!setupConfig.information || !setupConfig.information.category) {
-    console.error('❌ Fehler: `information.category` in der Konfiguration fehlt!');
+    console.error(
+      '❌ Fehler: `information.category` in der Konfiguration fehlt!'
+    );
     return;
   }
 
@@ -13,7 +15,9 @@ export async function setupInformationCategory(guild) {
   let category = guild.channels.cache.get(config.ID);
 
   if (category && category.type !== ChannelType.GuildCategory) {
-    console.warn('⚠️ Gespeicherte ID verweist auf keinen gültigen Kategorietyp. ID wird zurückgesetzt.');
+    console.warn(
+      '⚠️ Gespeicherte ID verweist auf keinen gültigen Kategorietyp. ID wird zurückgesetzt.'
+    );
     setupConfig.information.category.ID = null;
     saveConfig();
     category = null;
@@ -27,7 +31,9 @@ export async function setupInformationCategory(guild) {
     if (category) {
       setupConfig.information.category.ID = category.id;
       saveConfig();
-      console.log(`✅ Kategorie "${category.name}" durch Name gefunden und ID gespeichert.`);
+      console.log(
+        `✅ Kategorie "${category.name}" durch Name gefunden und ID gespeichert.`
+      );
     } else {
       try {
         category = await guild.channels.create({
@@ -54,7 +60,9 @@ export async function setupInformationCategory(guild) {
         if (category) {
           setupConfig.information.category.ID = category.id;
           saveConfig();
-          console.log(`✅ Kategorie "${category.name}" erfolgreich erstellt und ID gespeichert.`);
+          console.log(
+            `✅ Kategorie "${category.name}" erfolgreich erstellt und ID gespeichert.`
+          );
         } else {
           console.error('❌ Fehler: Kategorie konnte nicht erstellt werden.');
           return;
@@ -76,37 +84,52 @@ export async function setupInformationChannels(guild, category) {
   isRunning = true;
 
   if (!category || category.type !== ChannelType.GuildCategory) {
-    console.error('❌ Fehler: `category` ist nicht korrekt initialisiert oder kein Kategorietyp.');
+    console.error(
+      '❌ Fehler: `category` ist nicht korrekt initialisiert oder kein Kategorietyp.'
+    );
     isRunning = false;
     return;
   }
 
-  if (!setupConfig.information.permission || !setupConfig.information.permission.readOnly) {
-    console.error('❌ Fehler: `information.permission.readOnly` in der Konfiguration fehlt!');
+  if (
+    !setupConfig.information.permission ||
+    !setupConfig.information.permission.readOnly
+  ) {
+    console.error(
+      '❌ Fehler: `information.permission.readOnly` in der Konfiguration fehlt!'
+    );
     isRunning = false;
     return;
   }
 
-  const permissions = setupConfig.information.permission.readOnly.map((perm) => ({
-    id: guild.roles.everyone.id,
-    allow: perm.allow.map((flag) => PermissionsBitField.Flags[flag]),
-    deny: perm.deny.map((flag) => PermissionsBitField.Flags[flag]),
-  }));
+  const permissions = setupConfig.information.permission.readOnly.map(
+    (perm) => ({
+      id: guild.roles.everyone.id,
+      allow: perm.allow.map((flag) => PermissionsBitField.Flags[flag]),
+      deny: perm.deny.map((flag) => PermissionsBitField.Flags[flag]),
+    })
+  );
 
   const checkAndUpdateMessage = async (channel, messageConfig) => {
     if (messageConfig.ID) {
       try {
         const fetchedMessage = await channel.messages.fetch(messageConfig.ID);
         if (fetchedMessage.content === messageConfig.MESSAGE) {
-          console.log(`📌 Nachricht im Kanal "${channel.name}" ist bereits aktuell.`);
+          console.log(
+            `📌 Nachricht im Kanal "${channel.name}" ist bereits aktuell.`
+          );
           return;
         } else {
           await fetchedMessage.edit(messageConfig.MESSAGE);
-          console.log(`✅ Nachricht im Kanal "${channel.name}" erfolgreich aktualisiert.`);
+          console.log(
+            `✅ Nachricht im Kanal "${channel.name}" erfolgreich aktualisiert.`
+          );
           return;
         }
       } catch (err) {
-        console.log(`⚠️ Nachricht mit ID ${messageConfig.ID} existiert nicht mehr.`);
+        console.log(
+          `⚠️ Nachricht mit ID ${messageConfig.ID} existiert nicht mehr.`
+        );
         messageConfig.ID = null;
         saveConfig();
       }
@@ -115,7 +138,9 @@ export async function setupInformationChannels(guild, category) {
     const newMessage = await channel.send(messageConfig.MESSAGE);
     messageConfig.ID = newMessage.id;
     saveConfig();
-    console.log(`✅ Nachricht im Kanal "${channel.name}" neu erstellt und ID gespeichert.`);
+    console.log(
+      `✅ Nachricht im Kanal "${channel.name}" neu erstellt und ID gespeichert.`
+    );
   };
 
   const createOrUpdateChannel = async (channelConfig) => {
@@ -142,14 +167,21 @@ export async function setupInformationChannels(guild, category) {
               `✅ Kanal "${channel.name}" in der Kategorie "${category.name}" erfolgreich erstellt und ID gespeichert.`
             );
           } else {
-            console.error(`❌ Fehler: Kanal "${channelConfig.NAME}" konnte nicht erstellt werden.`);
+            console.error(
+              `❌ Fehler: Kanal "${channelConfig.NAME}" konnte nicht erstellt werden.`
+            );
           }
         } catch (err) {
-          console.error(`❌ Fehler beim Erstellen des Kanals "${channelConfig.NAME}":`, err);
+          console.error(
+            `❌ Fehler beim Erstellen des Kanals "${channelConfig.NAME}":`,
+            err
+          );
           return;
         }
       } else {
-        console.log(`📂 Kanal "${channel.name}" existiert bereits, aber ID in JSON war nicht gesetzt. Aktualisiere ID...`);
+        console.log(
+          `📂 Kanal "${channel.name}" existiert bereits, aber ID in JSON war nicht gesetzt. Aktualisiere ID...`
+        );
         channelConfig.ID = channel.id;
         saveConfig();
       }
@@ -157,9 +189,13 @@ export async function setupInformationChannels(guild, category) {
 
     if (channel && channel.parentId !== category.id) {
       await channel.setParent(category.id);
-      console.log(`🔄 Kanal "${channel.name}" in die Kategorie "${category.name}" verschoben.`);
+      console.log(
+        `🔄 Kanal "${channel.name}" in die Kategorie "${category.name}" verschoben.`
+      );
     } else if (channel) {
-      console.log(`📂 Kanal "${channel.name}" ist bereits in der Kategorie "${category.name}".`);
+      console.log(
+        `📂 Kanal "${channel.name}" ist bereits in der Kategorie "${category.name}".`
+      );
     }
 
     if (channelConfig.message) {

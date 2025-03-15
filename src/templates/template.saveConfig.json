@@ -60,10 +60,7 @@
       "readOnly": [
         {
           "ID": "",
-          "allow": [
-            "ViewChannel",
-            "ReadMessageHistory"
-          ],
+          "allow": ["ViewChannel", "ReadMessageHistory"],
           "deny": [
             "SendMessages",
             "AddReactions",

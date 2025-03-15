@@ -1,5 +1,9 @@
 {
   "watch": ["src"],
-  "ignore": ["src/config/setupConfig.json", "src/translations/**/*.json"],
+  "ignore": [
+    "src/config/*.json",
+    "src/translations/**/*.json",
+    "src/db/*.json"
+  ],
   "exec": "node index.js"
 }

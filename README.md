@@ -146,3 +146,19 @@ client.once('ready', async () => {
 
     process.exit(0);
 });
+
+
+## commits 
+```md
+
+Chore - cleanup, dependencies install
+CI - continious integration (pull request accepted - new version) - google cloud build & github actions
+Feat - feature, everything related to features
+Fix - bugfixing
+Perf - performance optimisation
+Refactor - beautify code
+Revert - revert code
+Style - code style updates
+Test - everything about testing
+
+```
