@@ -1,9 +1,5 @@
 import { ChannelType, PermissionFlagsBits } from 'discord.js';
-import {
-  setupConfig,
-  saveConfig,
-  reloadConfig,
-} from '../config/setupConfig.js';
+import { setupConfig, reloadConfig } from '../config/setupConfig.js';
 import * as db from '../db/database.js';
 
 export async function setupReactionListener(client) {
@@ -16,29 +12,32 @@ export async function setupReactionListener(client) {
 
   client.on('messageReactionAdd', async (reaction, user) => {
     try {
-        if (user.bot) return;
+      if (user.bot) return;
 
-        if (reaction.partial) await reaction.fetch();
-        if (reaction.message.partial) await reaction.message.fetch();
+      if (reaction.partial) await reaction.fetch();
+      if (reaction.message.partial) await reaction.message.fetch();
 
-        const ticketConfig = setupConfig.information.channels.ticketsupport;
+      const ticketConfig = setupConfig?.information?.channels?.ticketsupport;
+      let ticketData = db.getTicketData(user.id);
+      if (!ticketConfig || !ticketConfig.message?.ID) {
+        console.warn('Warnung: Ticket-Konfiguration nicht gefunden.');
+        return;
+      }
+      
+      
+      if (reaction.message.id === ticketConfig.message.ID) {
+        await reaction.users.remove(user);
+        await handleExistingChannel(user, reaction);
+        return;
+      }
 
-        // Falls auf die Ticket-Erstellungsnachricht reagiert wird
-        if (reaction.message.id === ticketConfig.message.ID) {
-            await reaction.users.remove(user);
-            await handleExistingChannel(user, reaction);
-            return;
-        }
-
-        let ticketData = db.getTicketData(reaction.message.channel.id);
-        if (ticketData && reaction.message.id === ticketData["1"].ticket_message_id) {
-            console.log(`Ticket ${reaction.message.channel.id} wird geschlossen.`);
-            await closeTicket(reaction.message.channel, reaction.message.guild, user);
-        }
+      if (reaction.message.id === ticketData.ticket_message_id) {
+        await closeTicket(reaction.message.channel, user);
+      }
     } catch (error) {
-        console.error('Fehler bei der Verarbeitung der Reaktion:', error);
+      console.error('Fehler bei der Verarbeitung der Reaktion:', error);
     }
-});
+  });
 
   client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
@@ -117,13 +116,13 @@ async function handleExistingChannel(user, reaction) {
   await createChannel(user, reaction);
 }
 
-async function closeTicket(channel, guild, user) {
+async function closeTicket(channel, user) {
   try {
-    await channel.send(`🔒 Ticket wird geschlossen von ${user}.`);
+    await channel.send(`🔒 Ticket wird geschlossen von ${user.username}.`);
     setTimeout(async () => {
       await channel.delete();
       db.deleteTicket(user.id);
-      console.log(`🚫 Ticket-Channel ${channel.id} wurde geschlossen.`);
+      console.log(`🚫 Ticket-Channel ${channel.name} wurde geschlossen.`);
     }, 5000);
   } catch (error) {
     console.error('Fehler beim Schließen des Tickets:', error);
@@ -171,12 +170,11 @@ async function createChannel(user, reaction) {
     `👋 Hallo ${user}, ein Support-Mitarbeiter wird sich bald melden!\n\n📩 **Reagiere mit ${setupConfig.information.channels.ticketsupport.REACTION}, um das Ticket zu schließen.**`
   );
 
-  db.saveTicket(user.id, ticketChannel.id);
+  db.saveTicket(user.id, ticketChannel.id, ticketMessage.id);
   db.updateTicket(user.id, '1', {
     status: 'offen',
     warning: false,
     warnung_nachricht_id: '',
-    ticket_message_id: ticketMessage.id,
   });
 
   await ticketMessage.react(
