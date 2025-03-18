@@ -2,6 +2,7 @@ import { Client, GatewayIntentBits, Collection, Events } from 'discord.js';
 import dotenv from 'dotenv';
 import { setLanguage } from './src/utils/translationHandler.js';
 import { setupServer } from './src/server-build/serverSetup.js';
+import { reloadTicketListeners } from './src/db/database.js';
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ const client = new Client({
 client.once('ready', async (client) => {
   const guild = client.guilds.cache.get(process.env.SERVER_GUILDID);
   await setupServer(guild, client);
+  await reloadTicketListeners(client);
 });
 
 client.login(process.env.DISCORD_BOT_TOKEN).catch((err) => {
