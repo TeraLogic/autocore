@@ -23,15 +23,16 @@ export async function setupReactionListener(client) {
         console.warn('Warnung: Ticket-Konfiguration nicht gefunden.');
         return;
       }
-      
-      
+
       if (reaction.message.id === ticketConfig.message.ID) {
         await reaction.users.remove(user);
-        await handleExistingChannel(user, reaction);
+        // await handleExistingChannel(user, reaction);
+        await handlerTicket(reaction, user);
         return;
       }
 
       if (reaction.message.id === ticketData.ticket_message_id) {
+        // await reaction.users.remove(user);
         await closeTicket(reaction.message.channel, user);
       }
     } catch (error) {
@@ -42,7 +43,8 @@ export async function setupReactionListener(client) {
   client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
-    let ticketData = db.getTicketData(message.channel.id);
+    const userId = message.author.id;
+    let ticketData = db.getTicketData(userId);
     if (!ticketData) return;
 
     const privilegedRoles = [
@@ -58,7 +60,7 @@ export async function setupReactionListener(client) {
       const lastProblemId = getLastProblemId(ticketData);
 
       if (ticketData[lastProblemId].status === 'offen') {
-        db.updateTicket(message.channel.id, lastProblemId, {
+        db.updateTicket(userId, lastProblemId, {
           status: 'bearbeitet',
         });
         console.log(
@@ -70,17 +72,13 @@ export async function setupReactionListener(client) {
 }
 
 async function handleExistingChannel(user, reaction) {
-  console.log(`Prüfe auf existierendes Ticket für ${user.username}`);
-
   let ticketData = db.getTicketData(user.id);
   if (ticketData) {
     console.log(
       `Benutzer ${user.username} hat bereits ein Ticket: ${ticketData.channel_id}`
     );
-    const existingChannel = reaction.message.guild.channels.cache.get(
-      ticketData.channel_id
-    );
-    if (!existingChannel) return;
+    // const existingChannel = reaction.message.guild.channels.cache.get(ticketData.channel_id);
+    // if (!existingChannel) return;
 
     const lastProblemId = getLastProblemId(ticketData);
 
@@ -101,7 +99,7 @@ async function handleExistingChannel(user, reaction) {
           );
         }
       }
-      const warningMessageId = await sendWarning(existingChannel, user);
+      const warningMessageId = await sendWarning(existingChannel);
       db.updateTicket(user.id, lastProblemId, {
         warning: true,
         warnung_nachricht_id: warningMessageId,
@@ -182,19 +180,46 @@ async function createChannel(user, reaction) {
   );
 }
 
-async function sendWarning(channel, user) {
-  const warningMessage = await channel.send(
-    `⚠️ **Der Support weiß bereits über dein Anliegen Bescheid. Bitte keine weiteren Tickets fordern.**`
-  );
-  return warningMessage.id;
+async function sendWarning(ticketData, userId) {
+  try {
+    if (!ticketData.channel_id) {
+      console.error(
+        `❌ Fehler: Kein gültiger Channel für das Ticket von User ${userId}`
+      );
+      return;
+    }
+    const channel = ticketData.channel_id;
+    const sendMessage = await channel.send(
+      `⚠️ **Der Support weiß bereits über dein Anliegen Bescheid. Bitte keine weiteren Tickets fordern.**`
+    );
+    await db.updateTicket(userId, { warnung_nachricht_id: sendMessage.id });
+    console.log(
+      `✅ Warnung gesendet & Nachricht-ID gespeichert: ${sendMessage.id}`
+    );
+  } catch (err) {
+    console.error(`❌ Fehler beim Senden der Warnung:`, err);
+  }
 }
 
 function getLastProblemId(ticketData) {
-  return Object.keys(ticketData)
+  if (
+    !ticketData ||
+    typeof ticketData !== 'object' ||
+    Object.keys(ticketData).length === 0
+  ) {
+    console.warn(
+      '⚠️ Warnung: `ticketData` ist ungültig oder leer.',
+      ticketData
+    );
+    return null;
+  }
+
+  const ids = Object.keys(ticketData)
     .filter((k) => !isNaN(k))
     .map(Number)
-    .sort((a, b) => b - a)[0]
-    .toString();
+    .sort((a, b) => b - a);
+
+  return ids.length > 0 ? ids[0].toString() : null;
 }
 
 function createNewProblem(userId, channel, user) {
@@ -207,4 +232,32 @@ function createNewProblem(userId, channel, user) {
   });
 
   channel.send(`📌 **${user.tag} hat ein neues Problem gemeldet.**`);
+}
+
+function handlerTicket(reaction, user) {
+  let ticketData = db.getTicketData(user.id);
+
+  // 🛑 Falls kein Ticket existiert, erstelle eines und speichere das neue `ticketData`
+  if (!ticketData) {
+    console.warn(
+      `⚠️ Kein Ticket für User ${user.username} gefunden, erstelle ein neues.`
+    );
+    ticketData = createChannel(user, reaction);
+  }
+
+  const lastProblemId = getLastProblemId(ticketData);
+
+  // 🛑 Sicherstellen, dass `lastProblemId` existiert und gültig ist
+  if (!lastProblemId || !ticketData[lastProblemId]) {
+    console.warn(
+      `⚠️ Kein gültiges Problem für User ${user.username} gefunden.`
+    );
+    console.log('Aktuelles ticketData:', ticketData);
+    return;
+  }
+
+  // ✅ Status überprüfen, bevor eine Warnung gesendet wird
+  if (ticketData[lastProblemId].status === 'offen') {
+    sendWarning(ticketData, user.id);
+  }
 }
