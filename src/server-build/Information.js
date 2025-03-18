@@ -7,10 +7,10 @@ const MAX_RETRIES = 3;
 
 export async function setupInformationCategory(guild) {
   if (retryCount >= MAX_RETRIES) {
-    console.error("❌ Maximalanzahl an Wiederholungen erreicht. Abbruch.");
+    console.error('❌ Maximalanzahl an Wiederholungen erreicht. Abbruch.');
     return;
   }
-  
+
   const config = setupConfig.information?.category;
   if (!config) return;
 
@@ -34,20 +34,13 @@ export async function setupInformationCategory(guild) {
         category = await guild.channels.create({
           name: config.NAME,
           type: ChannelType.GuildCategory,
-          permissionOverwrites: [{
-            id: guild.roles.everyone.id,
-            allow: [PermissionsBitField.Flags.ViewChannel],
-            deny: Object.values(PermissionsBitField.Flags).filter(flag => 
-              [
-                'SendMessages', 'AddReactions', 'AttachFiles', 'EmbedLinks',
-                'ManageMessages', 'ManageChannels', 'UseApplicationCommands',
-                'CreateInstantInvite'
-              ].includes(flag.name))
-          }],
+          position: config.POSITION || 0,
+          permissionOverwrites: config.PERMISSIONS || []
         });
         setupConfig.information.category.ID = category.id;
         saveConfig();
-      } catch {
+      } catch (error) {
+        console.error('❌ Fehler beim Erstellen der Kategorie:', error);
         return;
       }
     }
@@ -55,53 +48,62 @@ export async function setupInformationCategory(guild) {
   await setupInformationChannels(guild, category);
 }
 
-export async function setupInformationChannels(guild, category) {
+async function setupInformationChannels(guild, category) {
   if (isRunning || !category || category.type !== ChannelType.GuildCategory) return;
   isRunning = true;
 
-  const permissionConfig = setupConfig.information?.permission?.readOnly;
-  if (!permissionConfig) {
-    isRunning = false;
-    return;
-  }
-
+  const permissionConfig = setupConfig.information?.permission?.readOnly || [];
   const permissions = permissionConfig.map(perm => ({
     id: guild.roles.everyone.id,
     allow: perm.allow.map(flag => PermissionsBitField.Flags[flag]),
     deny: perm.deny.map(flag => PermissionsBitField.Flags[flag]),
   }));
 
-  const updateMessage = async (channel, messageConfig) => {
+  const updateMessage = async (channel, channelConfig) => {
     try {
+      if (!channelConfig?.message) return;
+      const messageConfig = channelConfig.message;
+      
       if (messageConfig.ID) {
-        const fetchedMessage = await channel.messages.fetch(messageConfig.ID);
-        if (fetchedMessage.partial) {
-          retryCount++;
-          console.warn("⚠️ Nachricht nicht vollständig. Wiederhole setupInformationCategory...");
-          if (retryCount < MAX_RETRIES) {
-            await setupInformationCategory(guild);
-          } else {
-            console.error("❌ Maximalanzahl an Wiederholungen erreicht. Fehlerhafte Nachricht.");
+        const fetchedMessage = await channel.messages.fetch(messageConfig.ID).catch(() => null);
+        if (fetchedMessage) {
+          if (fetchedMessage.partial) {
+            retryCount++;
+            console.warn('⚠️ Nachricht nicht vollständig. Wiederhole setupInformationCategory...');
+            if (retryCount < MAX_RETRIES) {
+              await setupInformationCategory(guild);
+            } else {
+              console.error('❌ Maximalanzahl an Wiederholungen erreicht. Fehlerhafte Nachricht.');
+            }
+            return;
+          }
+          if (fetchedMessage.content !== messageConfig.MESSAGE) {
+            await fetchedMessage.edit(messageConfig.MESSAGE);
+          }
+          if (channelConfig === setupConfig.information.channels.ticketsupport) {
+            const emoji = setupConfig.information.channels.ticketsupport.REACTION;
+            if (!fetchedMessage.reactions.cache.has(emoji)) {
+              await fetchedMessage.react(emoji);
+            }
           }
           return;
         }
-        if (fetchedMessage.content !== messageConfig.MESSAGE) {
-          await fetchedMessage.edit(messageConfig.MESSAGE);
-        }
-        if (!fetchedMessage.reactions.cache.has('📩')) {
-          await fetchedMessage.react('📩'); // Reaktion hinzufügen
-        }
-        return;
       }
-    } catch {}
-    
-    const newMessage = await channel.send(messageConfig.MESSAGE);
-    messageConfig.ID = newMessage.id;
-    saveConfig();
-    await newMessage.react('📩'); // Fügt eine Reaktion hinzu, um Tickets zu öffnen
+      
+      const newMessage = await channel.send(messageConfig.MESSAGE);
+      channelConfig.message.ID = newMessage.id;
+      saveConfig();
+      
+      if (channelConfig === setupConfig.information.channels.ticketsupport) {
+        await newMessage.react(setupConfig.information.channels.ticketsupport.REACTION);
+      }
+    } catch (error) {
+      console.error('❌ Fehler beim Aktualisieren der Nachricht:', error);
+    }
   };
 
-  const manageChannel = async (channelConfig) => {
+  const createOrUpdateChannel = async (channelConfig) => {
+    if (!channelConfig) return;
     let channel = guild.channels.cache.get(channelConfig.ID) ||
       guild.channels.cache.find(ch => ch.name.toLowerCase() === channelConfig.NAME.toLowerCase());
 
@@ -111,26 +113,27 @@ export async function setupInformationChannels(guild, category) {
           name: channelConfig.NAME,
           type: ChannelType.GuildText,
           parent: category.id,
+          position: channelConfig.POSITION || 0,
           permissionOverwrites: permissions,
         });
         channelConfig.ID = channel.id;
         saveConfig();
-      } catch {
+      } catch (error) {
+        console.error(`❌ Fehler beim Erstellen des Kanals ${channelConfig.NAME}:`, error);
         return;
       }
     } else if (channel.parentId !== category.id) {
       await channel.setParent(category.id);
     }
-
-    if (channelConfig.message) await updateMessage(channel, channelConfig.message);
+    await updateMessage(channel, channelConfig);
   };
 
   const { announcements, changelog, partner, ticketsupport } = setupConfig.information.channels;
   await Promise.all([
-    manageChannel(announcements),
-    manageChannel(changelog),
-    manageChannel(partner),
-    manageChannel(ticketsupport)
+    createOrUpdateChannel(announcements),
+    createOrUpdateChannel(changelog),
+    createOrUpdateChannel(partner),
+    createOrUpdateChannel(ticketsupport),
   ]);
 
   isRunning = false;

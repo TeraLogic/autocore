@@ -1,6 +1,7 @@
 import { ChannelType, PermissionFlagsBits } from 'discord.js';
 import { setupConfig, reloadConfig } from '../config/setupConfig.js';
 import * as db from '../db/database.js';
+import { getTranslation } from '../utils/translationHandler.js'
 import { reloadTicketListeners } from '../db/database.js';
 
 export async function setupReactionListener(client) {
@@ -43,11 +44,13 @@ export async function setupReactionListener(client) {
     const tickets = await db.getAllTickets();
     if (!tickets || Object.keys(tickets).length === 0) return;
 
-    const ticketEntry = Object.entries(tickets).find(([_, ticket]) => ticket.channel_id === channelId);
+    const ticketEntry = Object.entries(tickets).find(
+      ([_, ticket]) => ticket.channel_id === channelId
+    );
     if (!ticketEntry) return;
 
     const [userId, ticketData] = ticketEntry;
-    
+
     const privilegedRoles = new Set([
       setupConfig.role.supporter,
       setupConfig.role.moderator,
@@ -55,10 +58,15 @@ export async function setupReactionListener(client) {
       setupConfig.role.developer,
     ]);
 
-    if (message.member.roles.cache.some((role) => privilegedRoles.has(role.id))) {
+    if (
+      message.member.roles.cache.some((role) => privilegedRoles.has(role.id))
+    ) {
       const lastProblemId = getLastProblemId(ticketData);
 
-      if (lastProblemId && ticketData.problems[lastProblemId]?.status === 'offen') {
+      if (
+        lastProblemId &&
+        ticketData.problems[lastProblemId]?.status === 'offen'
+      ) {
         db.updateTicket(userId, lastProblemId, { status: 'bearbeitet' });
       }
     }
@@ -67,7 +75,8 @@ export async function setupReactionListener(client) {
 
 async function closeTicket(channel, user) {
   try {
-    await channel.send(`🔒 Ticket wird geschlossen von ${user.username}.`);
+    await channel.send(getTranslation("ticket", "closed")
+      .replace('${user}', user.username));
     setTimeout(async () => {
       await channel.delete();
       db.deleteTicket(user.id);
@@ -110,7 +119,12 @@ async function createChannel(user, reaction) {
   });
 
   const ticketMessage = await ticketChannel.send(
-    `👋 Hallo ${user}, ein Support-Mitarbeiter wird sich bald melden!\n\n📩 **Reagiere mit ${setupConfig.information.channels.ticketsupport.REACTION}, um das Ticket zu schließen.**`
+    getTranslation('ticket', 'created')
+      .replace('${user}', user)
+      .replace(
+        '${reaction}',
+        setupConfig.information.channels.ticketsupport.REACTION
+      )
   );
   db.saveTicket(user.id, ticketChannel.id, ticketMessage.id);
   db.updateTicket(user.id, '1', {
@@ -146,7 +160,7 @@ async function sendWarning(ticketData, userId, channel) {
     }
 
     const sendMessage = await channel.send(
-      `⚠️ **Der Support weiß bereits über dein Anliegen Bescheid. Bitte keine weiteren Tickets fordern.**`
+      getTranslation("ticket", "warning")
     );
 
     db.updateTicket(userId, lastProblemId, {
@@ -192,7 +206,8 @@ function createNewProblem(userId, channel, user) {
     warning: false,
     warnung_nachricht_id: '',
   });
-  channel.send(`📌 **${user.tag} hat ein neues Problem gemeldet.**`);
+  channel.send(getTranslation("ticket", "reopen")
+    .replace("${user}", user.tag));
 }
 
 async function handlerTicket(reaction, user) {
