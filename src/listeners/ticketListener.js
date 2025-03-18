@@ -17,8 +17,7 @@ export async function setupReactionListener(client) {
 
       const ticketConfig = setupConfig?.information?.channels?.ticketsupport;
       const ticketData = db.getTicketData(user.id);
-
-      if (!ticketConfig.message?.ID) return;
+      if (!ticketConfig?.message?.ID) return;
 
       if (reaction.message.id === ticketConfig.message.ID) {
         await reaction.users.remove(user);
@@ -26,8 +25,8 @@ export async function setupReactionListener(client) {
         return;
       }
 
-      if (reaction.message.id === ticketData?.ticket_message_id) {
-        reaction.users.remove(user);
+      if (ticketData && reaction.message.id === ticketData.ticket_message_id) {
+        await reaction.users.remove(user);
         await closeTicket(reaction.message.channel, user);
       }
     } catch (error) {
@@ -39,23 +38,16 @@ export async function setupReactionListener(client) {
     if (message.author.bot) return;
 
     const channelId = message.channel.id;
-    if (typeof db.getAllTickets !== 'function') {
-      console.error(
-        '❌ Fehler: getAllTickets ist keine Funktion. Überprüfe den Import der Datenbank.'
-      );
-      return;
-    }
+    if (typeof db.getAllTickets !== 'function') return;
 
     const tickets = await db.getAllTickets();
     if (!tickets || Object.keys(tickets).length === 0) return;
 
-    const ticketEntry = Object.entries(tickets).find(
-      ([_, ticket]) => ticket.channel_id === channelId
-    );
+    const ticketEntry = Object.entries(tickets).find(([_, ticket]) => ticket.channel_id === channelId);
     if (!ticketEntry) return;
 
     const [userId, ticketData] = ticketEntry;
-
+    
     const privilegedRoles = new Set([
       setupConfig.role.supporter,
       setupConfig.role.moderator,
@@ -63,19 +55,11 @@ export async function setupReactionListener(client) {
       setupConfig.role.developer,
     ]);
 
-    if (
-      message.member.roles.cache.some((role) => privilegedRoles.has(role.id))
-    ) {
+    if (message.member.roles.cache.some((role) => privilegedRoles.has(role.id))) {
       const lastProblemId = getLastProblemId(ticketData);
 
-      if (
-        lastProblemId &&
-        ticketData.problems[lastProblemId]?.status === 'offen'
-      ) {
+      if (lastProblemId && ticketData.problems[lastProblemId]?.status === 'offen') {
         db.updateTicket(userId, lastProblemId, { status: 'bearbeitet' });
-        console.log(
-          `✅ Problem ${lastProblemId} in Ticket ${channelId} wurde auf 'bearbeitet' gesetzt.`
-        );
       }
     }
   });
