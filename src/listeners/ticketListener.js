@@ -16,18 +16,18 @@ export async function setupReactionListener(client) {
       if (reaction.message.partial) await reaction.message.fetch();
 
       const ticketConfig = setupConfig?.information?.channels?.ticketsupport;
-      let ticketData = db.getTicketData(user.id);
-      if (!ticketConfig || !ticketConfig.message?.ID) return;
+      const ticketData = db.getTicketData(user.id);
+
+      if (!ticketConfig.message?.ID) return;
 
       if (reaction.message.id === ticketConfig.message.ID) {
         await reaction.users.remove(user);
-        // await handleExistingChannel(user, reaction);
         await handlerTicket(reaction, user);
         return;
       }
 
       if (reaction.message.id === ticketData?.ticket_message_id) {
-        // await reaction.users.remove(user);
+        reaction.users.remove(user);
         await closeTicket(reaction.message.channel, user);
       }
     } catch (error) {
@@ -38,63 +38,47 @@ export async function setupReactionListener(client) {
   client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
-    const userId = message.author.id;
-    let ticketData = db.getTicketData(userId);
-    if (!ticketData) return;
+    const channelId = message.channel.id;
+    if (typeof db.getAllTickets !== 'function') {
+      console.error(
+        '❌ Fehler: getAllTickets ist keine Funktion. Überprüfe den Import der Datenbank.'
+      );
+      return;
+    }
 
-    const privilegedRoles = [
+    const tickets = await db.getAllTickets();
+    if (!tickets || Object.keys(tickets).length === 0) return;
+
+    const ticketEntry = Object.entries(tickets).find(
+      ([_, ticket]) => ticket.channel_id === channelId
+    );
+    if (!ticketEntry) return;
+
+    const [userId, ticketData] = ticketEntry;
+
+    const privilegedRoles = new Set([
       setupConfig.role.supporter,
       setupConfig.role.moderator,
       setupConfig.role.administrator,
       setupConfig.role.developer,
-    ];
+    ]);
 
-    const userRoles = message.member.roles.cache.map((role) => role.id);
-
-    if (userRoles.some((role) => privilegedRoles.includes(role))) {
+    if (
+      message.member.roles.cache.some((role) => privilegedRoles.has(role.id))
+    ) {
       const lastProblemId = getLastProblemId(ticketData);
 
-      if (ticketData[lastProblemId]?.status === 'offen') {
+      if (
+        lastProblemId &&
+        ticketData.problems[lastProblemId]?.status === 'offen'
+      ) {
         db.updateTicket(userId, lastProblemId, { status: 'bearbeitet' });
+        console.log(
+          `✅ Problem ${lastProblemId} in Ticket ${channelId} wurde auf 'bearbeitet' gesetzt.`
+        );
       }
     }
   });
-}
-
-async function handleExistingChannel(user, reaction) {
-  let ticketData = db.getTicketData(user.id);
-  if (!ticketData) return;
-
-  const lastProblemId = getLastProblemId(ticketData);
-
-  if (ticketData[lastProblemId]?.status === 'offen') {
-    if (
-      ticketData[lastProblemId].warning &&
-      ticketData[lastProblemId].warnung_nachricht_id
-    ) {
-      try {
-        const existingChannel = reaction.message.guild.channels.cache.get(
-          ticketData.channel_id
-        );
-        if (!existingChannel) return;
-        const oldWarning = await existingChannel.messages.fetch(
-          ticketData[lastProblemId].warnung_nachricht_id
-        );
-        if (oldWarning) await oldWarning.delete();
-      } catch (error) {
-        console.warn('Warnungsnachricht konnte nicht gelöscht werden:', error);
-      }
-    }
-    const warningMessageId = await sendWarning(ticketData, user.id);
-    db.updateTicket(user.id, lastProblemId, {
-      warning: true,
-      warnung_nachricht_id: warningMessageId,
-    });
-  } else {
-    createNewProblem(user.id, reaction.message.channel, user);
-  }
-
-  await createChannel(user, reaction);
 }
 
 async function closeTicket(channel, user) {
@@ -155,16 +139,41 @@ async function createChannel(user, reaction) {
   );
 }
 
-async function sendWarning(ticketData, userId) {
+async function sendWarning(ticketData, userId, channel) {
   try {
-    if (!ticketData.channel_id) return;
-    const channel = ticketData.channel_id;
+    if (!channel) return;
+
+    const lastProblemId = getLastProblemId(ticketData);
+    if (!lastProblemId || !ticketData.problems[lastProblemId]) return;
+
+    const problem = ticketData.problems[lastProblemId];
+    if (problem.warning && problem.warnung_nachricht_id) {
+      try {
+        const oldWarning = await channel.messages.fetch(
+          problem.warnung_nachricht_id
+        );
+        if (oldWarning) await oldWarning.delete();
+      } catch (error) {
+        console.warn(
+          '⚠️ Warnungsnachricht konnte nicht gelöscht werden:',
+          error
+        );
+      }
+    }
+
     const sendMessage = await channel.send(
       `⚠️ **Der Support weiß bereits über dein Anliegen Bescheid. Bitte keine weiteren Tickets fordern.**`
     );
-    await db.updateTicket(userId, { warnung_nachricht_id: sendMessage.id });
+
+    db.updateTicket(userId, lastProblemId, {
+      warning: true,
+      warnung_nachricht_id: sendMessage.id,
+    });
+
+    return sendMessage.id;
   } catch (err) {
-    console.error(`Fehler beim Senden der Warnung:`, err);
+    console.error(`❌ Fehler beim Senden der Warnung:`, err);
+    return null;
   }
 }
 
@@ -172,7 +181,8 @@ function getLastProblemId(ticketData) {
   if (
     !ticketData ||
     typeof ticketData !== 'object' ||
-    Object.keys(ticketData).length === 0
+    !ticketData.problems ||
+    Object.keys(ticketData.problems).length === 0
   ) {
     console.warn(
       '⚠️ Warnung: `ticketData` ist ungültig oder leer.',
@@ -180,10 +190,11 @@ function getLastProblemId(ticketData) {
     );
     return null;
   }
+
   return (
-    Object.keys(ticketData)
-      .filter((k) => !isNaN(k))
+    Object.keys(ticketData.problems)
       .map(Number)
+      .filter(Number.isInteger)
       .sort((a, b) => b - a)[0]
       ?.toString() || null
   );
@@ -200,14 +211,28 @@ function createNewProblem(userId, channel, user) {
   channel.send(`📌 **${user.tag} hat ein neues Problem gemeldet.**`);
 }
 
-function handlerTicket(reaction, user) {
+async function handlerTicket(reaction, user) {
   let ticketData = db.getTicketData(user.id);
-  if (!ticketData) ticketData = createChannel(user, reaction);
+  if (!ticketData) {
+    await createChannel(user, reaction);
+    return;
+  }
+
+  const channel = reaction.message.guild.channels.cache.get(
+    ticketData.channel_id
+  );
+  if (!channel) return;
 
   const lastProblemId = getLastProblemId(ticketData);
-  if (!lastProblemId || !ticketData[lastProblemId]) return;
+  if (!lastProblemId || !ticketData.problems[lastProblemId]) {
+    console.warn(`⚠️ Kein gültiges Problem für ${user.username} gefunden.`);
+    return;
+  }
 
-  if (ticketData[lastProblemId].status === 'offen') {
-    sendWarning(ticketData, user.id);
+  const problem = ticketData.problems[lastProblemId];
+  if (problem.status === 'offen') {
+    await sendWarning(ticketData, user.id, channel);
+  } else {
+    createNewProblem(user.id, channel, user);
   }
 }

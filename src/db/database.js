@@ -3,7 +3,7 @@ import path from 'path';
 
 const dbPath = path.resolve('./src/db/tickets.json');
 
-async function getAllTickets() {
+export async function getAllTickets() {
   const db = await loadDB();
   return db.tickets || {};
 }
@@ -12,7 +12,9 @@ export async function reloadTicketListeners(client) {
   const tickets = await getAllTickets();
   if (!tickets || Object.keys(tickets).length === 0) return;
 
-  console.log(`Lade gespeicherte Ticket-Nachrichten (${Object.keys(tickets).length})...`);
+  console.log(
+    `Lade gespeicherte Ticket-Nachrichten (${Object.keys(tickets).length})...`
+  );
 
   for (const userId in tickets) {
     const ticket = tickets[userId];
