@@ -1,6 +1,4 @@
-import {
-  setupInformationCategory
-} from './Information.js';
+import { setupInformationCategory } from './Information.js';
 
 import { setupReactionListener } from '../listeners/ticketListener.js';
 

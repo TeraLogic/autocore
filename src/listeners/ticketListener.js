@@ -1,7 +1,7 @@
 import { ChannelType, PermissionFlagsBits } from 'discord.js';
 import { setupConfig, reloadConfig } from '../config/setupConfig.js';
 import * as db from '../db/database.js';
-import { getTranslation } from '../utils/translationHandler.js'
+import { getTranslation } from '../utils/translationHandler.js';
 import { reloadTicketListeners } from '../db/database.js';
 
 export async function setupReactionListener(client) {
@@ -75,8 +75,9 @@ export async function setupReactionListener(client) {
 
 async function closeTicket(channel, user) {
   try {
-    await channel.send(getTranslation("ticket", "closed")
-      .replace('${user}', user.username));
+    await channel.send(
+      getTranslation('ticket', 'closed').replace('${user}', user.username)
+    );
     setTimeout(async () => {
       await channel.delete();
       db.deleteTicket(user.id);
@@ -159,9 +160,7 @@ async function sendWarning(ticketData, userId, channel) {
       }
     }
 
-    const sendMessage = await channel.send(
-      getTranslation("ticket", "warning")
-    );
+    const sendMessage = await channel.send(getTranslation('ticket', 'warning'));
 
     db.updateTicket(userId, lastProblemId, {
       warning: true,
@@ -206,8 +205,7 @@ function createNewProblem(userId, channel, user) {
     warning: false,
     warnung_nachricht_id: '',
   });
-  channel.send(getTranslation("ticket", "reopen")
-    .replace("${user}", user.tag));
+  channel.send(getTranslation('ticket', 'reopen').replace('${user}', user.tag));
 }
 
 async function handlerTicket(reaction, user) {

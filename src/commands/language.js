@@ -1,6 +1,6 @@
 import { setLanguage } from '../utils/translationHandler.js';
 
-export async function handleLanguageCommand(client, message) {
+export async function handleLanguageCommand(message) {
   if (!message.guild || message.author.bot) return;
 
   if (message.content.startsWith('!language ')) {
@@ -15,7 +15,6 @@ export async function handleLanguageCommand(client, message) {
     console.log(
       `🌍 Sprache auf '${newLang}' geändert. Aktualisiere die Ticket-Nachricht...`
     );
-    await createOrFetchTicketMessage(message.guild);
     message.reply(`✅ Sprache wurde auf **${newLang}** geändert.`);
   }
 }

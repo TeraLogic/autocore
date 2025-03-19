@@ -1,4 +1,4 @@
-import { ChannelType, PermissionsBitField } from 'discord.js';
+import { ChannelType, PermissionsBitField, EmbedBuilder } from 'discord.js';
 import { setupConfig, saveConfig } from '../config/setupConfig.js';
 
 let isRunning = false;
@@ -35,7 +35,7 @@ export async function setupInformationCategory(guild) {
           name: config.NAME,
           type: ChannelType.GuildCategory,
           position: config.POSITION || 0,
-          permissionOverwrites: config.PERMISSIONS || []
+          permissionOverwrites: config.PERMISSIONS || [],
         });
         setupConfig.information.category.ID = category.id;
         saveConfig();
@@ -48,64 +48,116 @@ export async function setupInformationCategory(guild) {
   await setupInformationChannels(guild, category);
 }
 
-async function setupInformationChannels(guild, category) {
-  if (isRunning || !category || category.type !== ChannelType.GuildCategory) return;
-  isRunning = true;
+export const updateMessage = async (channel, channelConfig) => {
+  try {
+    if (!channelConfig?.message) return;
+    const messageConfig = channelConfig.message;
 
-  const permissionConfig = setupConfig.information?.permission?.readOnly || [];
-  const permissions = permissionConfig.map(perm => ({
-    id: guild.roles.everyone.id,
-    allow: perm.allow.map(flag => PermissionsBitField.Flags[flag]),
-    deny: perm.deny.map(flag => PermissionsBitField.Flags[flag]),
-  }));
+    if (channelConfig === setupConfig.information.channels.partner) {
+      if (!messageConfig.EMBED || typeof messageConfig.EMBED !== 'object') {
+        console.warn(
+          `⚠️ Kein gültiges Embed für ${channelConfig.NAME}, Standardtext wird verwendet.`
+        );
+        messageConfig.EMBED = {
+          title: '🤝 Unsere Partner',
+          description: 'Kein Inhalt verfügbar.',
+          color: '0x00FF00',
+          fields: [],
+          footer: 'Partnerschaften helfen der Community zu wachsen!',
+        };
+      }
+    }
 
-  const updateMessage = async (channel, channelConfig) => {
-    try {
-      if (!channelConfig?.message) return;
-      const messageConfig = channelConfig.message;
-      
-      if (messageConfig.ID) {
-        const fetchedMessage = await channel.messages.fetch(messageConfig.ID).catch(() => null);
-        if (fetchedMessage) {
-          if (fetchedMessage.partial) {
-            retryCount++;
-            console.warn('⚠️ Nachricht nicht vollständig. Wiederhole setupInformationCategory...');
-            if (retryCount < MAX_RETRIES) {
-              await setupInformationCategory(guild);
-            } else {
-              console.error('❌ Maximalanzahl an Wiederholungen erreicht. Fehlerhafte Nachricht.');
-            }
-            return;
-          }
-          if (fetchedMessage.content !== messageConfig.MESSAGE) {
-            await fetchedMessage.edit(messageConfig.MESSAGE);
-          }
-          if (channelConfig === setupConfig.information.channels.ticketsupport) {
-            const emoji = setupConfig.information.channels.ticketsupport.REACTION;
-            if (!fetchedMessage.reactions.cache.has(emoji)) {
-              await fetchedMessage.react(emoji);
-            }
+    if (messageConfig.ID) {
+      const fetchedMessage = await channel.messages
+        .fetch(messageConfig.ID)
+        .catch(() => null);
+      if (fetchedMessage) {
+        if (fetchedMessage.partial) {
+          retryCount++;
+          console.warn(
+            '⚠️ Nachricht nicht vollständig. Wiederhole setupInformationCategory...'
+          );
+          if (retryCount < MAX_RETRIES) {
+            await setupInformationCategory(guild);
+          } else {
+            console.error(
+              '❌ Maximalanzahl an Wiederholungen erreicht. Fehlerhafte Nachricht.'
+            );
           }
           return;
         }
+
+        // 📌 Nur der Partner-Kanal bekommt ein Embed
+        if (channelConfig === setupConfig.information.channels.partner) {
+          const embedData = messageConfig.EMBED;
+          const embed = new EmbedBuilder()
+            .setTitle(embedData.title)
+            .setDescription(embedData.description)
+            .setColor(parseInt(embedData.color, 16))
+            .addFields(embedData.fields)
+            .setFooter({ text: embedData.footer });
+
+          const currentEmbed = fetchedMessage.embeds[0];
+          if (
+            !currentEmbed ||
+            currentEmbed.description !== embedData.description ||
+            JSON.stringify(currentEmbed.fields) !==
+              JSON.stringify(embedData.fields)
+          ) {
+            await fetchedMessage.edit({ embeds: [embed] });
+            console.log(`🔄 Embed für ${channelConfig.NAME} aktualisiert.`);
+          }
+        } else if (fetchedMessage.content !== messageConfig.MESSAGE) {
+          await fetchedMessage.edit(messageConfig.MESSAGE);
+          console.log(`🔄 Nachricht für ${channelConfig.NAME} aktualisiert.`);
+        }
+        return;
       }
-      
+    }
+
+    // 📌 Partner-Kanal bekommt ein Embed, andere nur Text
+    if (channelConfig === setupConfig.information.channels.partner) {
+      const embedData = messageConfig.EMBED;
+      const embed = new EmbedBuilder()
+        .setTitle(embedData.title)
+        .setDescription(embedData.description)
+        .setColor(parseInt(embedData.color, 16))
+        .addFields(embedData.fields)
+        .setFooter({ text: embedData.footer });
+
+      const newMessage = await channel.send({ embeds: [embed] });
+      channelConfig.message.ID = newMessage.id;
+    } else {
       const newMessage = await channel.send(messageConfig.MESSAGE);
       channelConfig.message.ID = newMessage.id;
-      saveConfig();
-      
-      if (channelConfig === setupConfig.information.channels.ticketsupport) {
-        await newMessage.react(setupConfig.information.channels.ticketsupport.REACTION);
-      }
-    } catch (error) {
-      console.error('❌ Fehler beim Aktualisieren der Nachricht:', error);
     }
-  };
+
+    saveConfig();
+  } catch (error) {
+    console.error('❌ Fehler beim Aktualisieren der Nachricht:', error);
+  }
+};
+
+export async function setupInformationChannels(guild, category) {
+  if (isRunning || !category || category.type !== ChannelType.GuildCategory)
+    return;
+  isRunning = true;
+
+  const permissionConfig = setupConfig.information?.permission?.readOnly || [];
+  const permissions = permissionConfig.map((perm) => ({
+    id: guild.roles.everyone.id,
+    allow: perm.allow.map((flag) => PermissionsBitField.Flags[flag]),
+    deny: perm.deny.map((flag) => PermissionsBitField.Flags[flag]),
+  }));
 
   const createOrUpdateChannel = async (channelConfig) => {
     if (!channelConfig) return;
-    let channel = guild.channels.cache.get(channelConfig.ID) ||
-      guild.channels.cache.find(ch => ch.name.toLowerCase() === channelConfig.NAME.toLowerCase());
+    let channel =
+      guild.channels.cache.get(channelConfig.ID) ||
+      guild.channels.cache.find(
+        (ch) => ch.name.toLowerCase() === channelConfig.NAME.toLowerCase()
+      );
 
     if (!channel) {
       try {
@@ -119,7 +171,10 @@ async function setupInformationChannels(guild, category) {
         channelConfig.ID = channel.id;
         saveConfig();
       } catch (error) {
-        console.error(`❌ Fehler beim Erstellen des Kanals ${channelConfig.NAME}:`, error);
+        console.error(
+          `❌ Fehler beim Erstellen des Kanals ${channelConfig.NAME}:`,
+          error
+        );
         return;
       }
     } else if (channel.parentId !== category.id) {
@@ -128,7 +183,8 @@ async function setupInformationChannels(guild, category) {
     await updateMessage(channel, channelConfig);
   };
 
-  const { announcements, changelog, partner, ticketsupport } = setupConfig.information.channels;
+  const { announcements, changelog, partner, ticketsupport } =
+    setupConfig.information.channels;
   await Promise.all([
     createOrUpdateChannel(announcements),
     createOrUpdateChannel(changelog),

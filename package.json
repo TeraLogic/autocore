@@ -7,11 +7,13 @@
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node dist/index.js",
-    "build": "pnpm exec esbuild index.js src/**/*.js --bundle --platform=node --format=esm --outdir=dist --external:node:* --external:discord.js --external:dotenv",
-    "prod": "pnpm run build && node src/deploy-commands.js && pnpm run start",
-    "deploy-commands": "node src/deploy-commands.js",
+    "build": "pnpm exec esbuild index.js src/**/*.js --bundle --platform=node --format=esm --outdir=dist --external:node:* --external:discord.js --external:dotenv --external:cron",
+    "prod": "pnpm run build && pnpm run deploy-commands && pnpm run start",
+    "deploy-commands": "node dist/src/deploy-commands.js",
     "format": "prettier --write .",
-    "clean": "rm -rf node_modules dist && pnpm install"
+    "lint": "eslint . --fix",
+    "clean": "rm -rf node_modules dist && pnpm install",
+    "rebuild": "pnpm run clean && pnpm install && pnpm run build"
   },
   "keywords": [
     "discord",
@@ -22,6 +24,7 @@
   "license": "ISC",
   "dependencies": {
     "cli-spinners": "^3.2.0",
+    "cron": "^4.1.0",
     "discord.js": "^14.18.0",
     "dotenv": "^16.4.7"
   },
