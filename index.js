@@ -1,8 +1,12 @@
-import { Client, GatewayIntentBits } from 'discord.js';
+import { Client, GatewayIntentBits, Collection } from 'discord.js';
 import dotenv from 'dotenv';
 import { setLanguage } from './src/utils/translationHandler.js';
 import { setupServer } from './src/server-build/serverSetup.js';
 import { startPeriodicUpdate } from './src/utils/timeScheduler.js';
+import {
+  loadCommands,
+  handleInteraction,
+} from './src/handlers/commandHandler.js';
 
 dotenv.config();
 
@@ -20,7 +24,12 @@ const client = new Client({
   ],
 });
 
-client.once('ready', async (client) => {
+const commands = loadCommands();
+client.on('interactionCreate', (interaction) =>
+  handleInteraction(interaction, commands)
+);
+
+client.once('ready', async () => {
   const guild = client.guilds.cache.get(process.env.SERVER_GUILDID);
   await setupServer(guild, client);
   startPeriodicUpdate(client);
