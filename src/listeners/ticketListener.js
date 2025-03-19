@@ -20,13 +20,19 @@ export async function setupReactionListener(client) {
       const ticketData = db.getTicketData(user.id);
       if (!ticketConfig?.message?.ID) return;
 
+      const guild = reaction.message.guild;
+        if (!guild) return;
+
+        const member = await guild.members.fetch(user.id);
+        const hasTicketRole = member.roles.cache.has(setupConfig.role.ticket);
+
       if (reaction.message.id === ticketConfig.message.ID) {
         await reaction.users.remove(user);
         await handlerTicket(reaction, user);
         return;
       }
 
-      if (ticketData && reaction.message.id === ticketData.ticket_message_id) {
+      if (ticketData && reaction.message.id === ticketData.ticket_message_id || hasTicketRole) {
         await reaction.users.remove(user);
         await closeTicket(reaction.message.channel, user);
       }
@@ -52,10 +58,7 @@ export async function setupReactionListener(client) {
     const [userId, ticketData] = ticketEntry;
 
     const privilegedRoles = new Set([
-      setupConfig.role.supporter,
-      setupConfig.role.moderator,
-      setupConfig.role.administrator,
-      setupConfig.role.developer,
+      setupConfig.role.ticket
     ]);
 
     if (
@@ -92,7 +95,7 @@ async function createChannel(user, reaction) {
   if (!guild) return;
 
   const ticketCategoryId = setupConfig.information.category.ID;
-  const supportRoleId = setupConfig.role.supporter;
+  const ticketRoleId = setupConfig.role.ticekt;
 
   const ticketChannel = await guild.channels.create({
     name: `ticket-${user.username}`,
@@ -109,7 +112,7 @@ async function createChannel(user, reaction) {
         ],
       },
       {
-        id: supportRoleId,
+        id: ticketRoleId,
         allow: [
           PermissionFlagsBits.ViewChannel,
           PermissionFlagsBits.SendMessages,
