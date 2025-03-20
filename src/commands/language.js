@@ -1,20 +1,42 @@
 import { setLanguage } from '../utils/translationHandler.js';
+import { SlashCommandBuilder } from 'discord.js';
 
-export async function handleLanguageCommand(message) {
-  if (!message.guild || message.author.bot) return;
+let availableLanguages = [
+  { name: 'default', value: 'Standart' },
+  { name: 'daxo', value: 'Partner' },
+];
 
-  if (message.content.startsWith('!language ')) {
-    const args = message.content.split(' ');
-    if (args.length < 2) {
-      message.reply('⚠️ Bitte gib eine Sprache an. Beispiel: `!language daxo`');
-      return;
-    }
+export const data = new SlashCommandBuilder()
+  .setName('language')
+  .setDescription(
+    'Ändere deine Sprache oder verwende deine eigene, wenn du Partner bist.'
+  )
+  .addStringOption(
+    (option) =>
+      option
+        .setName('language')
+        .setDescription('Wähle eine Sprache')
+        .setRequired(true)
+    //.addChoices(...availableLanguages)
+  );
 
-    const newLang = args[1];
-    setLanguage(newLang);
-    console.log(
-      `🌍 Sprache auf '${newLang}' geändert. Aktualisiere die Ticket-Nachricht...`
-    );
-    message.reply(`✅ Sprache wurde auf **${newLang}** geändert.`);
+export async function execute(interaction) {
+  const input = interaction.options.getString('language');
+  if (!input) {
+    return await interaction.reply({
+      content: '❌ Ungültige Sprache ausgewählt!',
+      ephemeral: true,
+    });
+  }
+
+  try {
+    setLanguage(input);
+    await interaction.reply(`✅ Sprache wurde auf **${input}** geändert.`);
+  } catch (error) {
+    console.error('❌ Fehler beim Setzen der Sprache:', error);
+    await interaction.reply({
+      content: '❌ Es gab einen Fehler beim Ändern der Sprache.',
+      ephemeral: true,
+    });
   }
 }

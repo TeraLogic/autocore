@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, Collection } from 'discord.js';
+import { Client, GatewayIntentBits } from 'discord.js';
 import dotenv from 'dotenv';
 import { setLanguage } from './src/utils/translationHandler.js';
 import { setupServer } from './src/server-build/serverSetup.js';

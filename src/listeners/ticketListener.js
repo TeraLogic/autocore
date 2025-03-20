@@ -21,10 +21,10 @@ export async function setupReactionListener(client) {
       if (!ticketConfig?.message?.ID) return;
 
       const guild = reaction.message.guild;
-        if (!guild) return;
+      if (!guild) return;
 
-        const member = await guild.members.fetch(user.id);
-        const hasTicketRole = member.roles.cache.has(setupConfig.role.ticket);
+      const member = await guild.members.fetch(user.id);
+      const hasTicketRole = member.roles.cache.has(setupConfig.role.ticket);
 
       if (reaction.message.id === ticketConfig.message.ID) {
         await reaction.users.remove(user);
@@ -32,7 +32,10 @@ export async function setupReactionListener(client) {
         return;
       }
 
-      if (ticketData && reaction.message.id === ticketData.ticket_message_id || hasTicketRole) {
+      if (
+        (ticketData && reaction.message.id === ticketData.ticket_message_id) ||
+        hasTicketRole
+      ) {
         await reaction.users.remove(user);
         await closeTicket(reaction.message.channel, user);
       }
@@ -57,9 +60,7 @@ export async function setupReactionListener(client) {
 
     const [userId, ticketData] = ticketEntry;
 
-    const privilegedRoles = new Set([
-      setupConfig.role.ticket
-    ]);
+    const privilegedRoles = new Set([setupConfig.role.ticket]);
 
     if (
       message.member.roles.cache.some((role) => privilegedRoles.has(role.id))

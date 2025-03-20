@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
+const GUILD_ID = process.env.SERVER_GUILDID;
 const CLIENT_ID = process.env.APPLICATION_CLIENTID;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const commandsPath = join(__dirname, 'commands');
@@ -61,7 +62,9 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
       return;
     }
 
-    await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
+    await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), {
+      body: commands,
+    });
 
     console.log(
       `✅ Erfolgreich ${commands.length} Slash-Commands registriert!`

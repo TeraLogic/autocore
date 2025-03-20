@@ -5,10 +5,10 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon index.js",
-    "start": "node dist/index.js",
-    "build": "pnpm exec esbuild index.js src/**/*.js --bundle --platform=node --format=esm --outdir=dist --external:node:* --external:discord.js --external:dotenv --external:cron",
-    "deploy-commands": "node src/deploy-commands.js",
+    "dev": "cross-env NODE_ENV=dev nodemon index.js",
+    "start": "cross-env NODE_ENV=production node dist/index.js",
+    "build": "cross-env NODE_ENV=production pnpm exec esbuild index.js src/**/*.js --bundle --platform=node --format=esm --outdir=dist --external:node:* --external:discord.js --external:dotenv --external:cron",
+    "deploy-commands": "cross-env NODE_ENV=production node src/deploy-commands.js",
     "prod": "pnpm run build && pnpm run deploy-commands && pnpm run start",
     "format": "prettier --write .",
     "lint": "eslint . --fix",
@@ -29,6 +29,7 @@
     "dotenv": "^16.4.7"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "esbuild": "^0.25.0",
     "nodemon": "^3.1.9",
     "prettier": "^3.5.1"
