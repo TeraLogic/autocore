@@ -1,5 +1,5 @@
 import { setupInformationCategory } from './Information.js';
-
+import { setupWelcomeCategory } from './Welcome.js';
 import { setupReactionListener } from '../listeners/ticketListener.js';
 
 export async function setupServer(guild, client) {
@@ -7,6 +7,7 @@ export async function setupServer(guild, client) {
     console.log(`⚙️ Starte Server-Setup für ${guild.name}...`);
 
     await setupInformationCategory(guild);
+    await setupWelcomeCategory(guild);
 
     console.log(`✅ Server-Setup für ${guild.name} erfolgreich abgeschlossen!`);
 
@@ -17,8 +18,3 @@ export async function setupServer(guild, client) {
     console.error('❌ Fehler während des Server-Setups:', error);
   }
 }
-
-const setupWelcome = async (guild) => {
-  await setupWelcomeCategory(guild);
-  await setupWelcomeChannels(guild);
-};
