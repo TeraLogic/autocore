@@ -10,48 +10,42 @@
     "message": "👋 Willkommen auf unserem Server! Schau dich um und hab Spaß."
   },
   "rules": {
-    "title": "TERALOGIC - RULES",
-    "sections": {
-      "general_behavior": {
-        "title": "§1. General Behavior",
-        "rules": [
-          "**Be respectful:** Treat others kindly. No insults or discrimination.",
-          "**No advertising:** Only promote in designated channels.",
-          "**No spam:** Avoid sending repetitive messages, emojis, or irrelevant links.",
-          "**No personal attacks:** Keep discussions respectful and on-topic."
-        ]
+    "embed": {
+      "header": {
+        "title": "TERALOGIC - RULES",
+        "color": 7995224
       },
-      "support": {
-        "title": "§2. Support",
-        "rules": [
-          "**Ask clear questions:** Provide enough detail for troubleshooting (error messages, screenshots, etc.).",
-          "**Use the correct channel:** Post questions in relevant channels (**#bug-reports**).",
-          "**Provide detailed bug reports:** Include all necessary information (bot name, steps to reproduce, error messages).",
-          "**Follow Discord’s Terms of Service:** Do not misuse bots or violate Discord rules."
-        ]
-      },
-      "channel_usage": {
-        "title": "§3. Channel Usage",
-        "rules": [
-          "**Voice-Channel:** Use voice channels for conversations.",
-          "**No cross-posting:** Avoid posting the same content in multiple channels."
-        ]
-      },
-      "privacy_security": {
-        "title": "§4. Privacy & Security",
-        "rules": [
-          "**No personal info sharing:** Don’t share sensitive details (passwords, emails, etc.).",
-          "**Stay safe:** Avoid clicking on suspicious links."
-        ]
-      },
-      "violations": {
-        "title": "§5. Violations",
-        "rules": [
-          "**Penalties:** Breaking the rules can lead to warnings, temporary bans, or permanent bans.",
-          "**Reports:** Report violations to moderators via our ticket system."
-        ]
+      "sections": [
+        {
+          "title": "§1. General Behavior",
+          "description": "**Be respectful:** Treat others kindly. No insults or discrimination.\n**No advertising:** Only promote in designated channels.\n**No spam:** Avoid sending repetitive messages, emojis, or irrelevant links.\n**No personal attacks:** Keep discussions respectful and on-topic.",
+          "color": 16734296
+        },
+        {
+          "title": "§2. Support",
+          "description": "**Ask clear questions:** Provide enough detail for troubleshooting (error messages, screenshots, etc.).\n**Use the correct channel:** Post questions in relevant channels (**#bug-reports**).\n**Provide detailed bug reports:** Include all necessary information (bot name, steps to reproduce, error messages).\n**Follow Discord’s Terms of Service:** Do not misuse bots or violate Discord rules.",
+          "color": 16734296
+        },
+        {
+          "title": "§3. Channel Usage",
+          "description": "**Voice-Channel:** Use voice channels for conversations.\n**No cross-posting:** Avoid posting the same content in multiple channels.",
+          "color": 16734296
+        },
+        {
+          "title": "§4. Privacy & Security",
+          "description": "**No personal info sharing:** Don’t share sensitive details (passwords, emails, etc.).\n**Stay safe:** Avoid clicking on suspicious links.",
+          "color": 16734296
+        },
+        {
+          "title": "§5. Violations",
+          "description": "**Penalties:** Breaking the rules can lead to warnings, temporary bans, or permanent bans.\n**Reports:** Report violations to moderators via our ticket system.",
+          "color": 16734296
+        }
+      ],
+      "footer": {
+        "title": "Enjoy your time and thank you for following the rules!",
+        "color": 7995224
       }
-    },
-    "footer": "Enjoy your time and thank you for following the rules!"
+    }
   }
 }

@@ -40,7 +40,10 @@ export async function setupInformationCategory(guild) {
         setupConfig.information.category.ID = category.id;
         saveConfig();
       } catch (error) {
-        console.error('❌ Fehler beim Erstellen der Kategorie:', error);
+        console.error(
+          `❌ Fehler beim Erstellen der Kategorie ${category.NAME}:`,
+          error
+        );
         return;
       }
     }
