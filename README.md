@@ -146,3 +146,71 @@ client.once('ready', async () => {
 
     process.exit(0);
 });
+
+
+später rules channel automatisch einstelle und erstellen:
+import { ChannelType, PermissionsBitField } from 'discord.js';
+
+async function setupCommunity(guild) {
+  try {
+    // 📌 1. Überprüfen, ob die Community bereits aktiviert ist
+    if (guild.features.includes("COMMUNITY")) {
+      console.log("✅ Community-Funktion bereits aktiviert.");
+    } else {
+      // 📌 2. Community-Modus aktivieren
+      await guild.edit({
+        features: [...guild.features, "COMMUNITY"],
+        verificationLevel: 2, // Medium (keine neuen Mitglieder ohne verifizierte E-Mail)
+        explicitContentFilter: 2, // Maximale Sicherheit (alle Nachrichten scannen)
+        defaultMessageNotifications: 1 // Nur Erwähnungen
+      });
+
+      console.log("✅ Community-Funktion wurde aktiviert.");
+    }
+
+    // 📌 3. Regel-Kanal prüfen oder erstellen
+    let rulesChannel = guild.channels.cache.get(guild.rulesChannelId);
+    
+    if (!rulesChannel) {
+      rulesChannel = await guild.channels.create({
+        name: "📌│rules",
+        type: ChannelType.GuildText, // Normaler Textkanal
+        topic: "Regeln des Servers. Bitte lesen und akzeptieren.",
+        permissionOverwrites: [
+          {
+            id: guild.roles.everyone.id,
+            allow: [PermissionsBitField.Flags.ViewChannel],
+            deny: [PermissionsBitField.Flags.SendMessages]
+          }
+        ]
+      });
+
+      console.log(`✅ Regelkanal erstellt: ${rulesChannel.id}`);
+    }
+
+    // 📌 4. Regelkanal als offiziellen Rules-Channel setzen
+    await guild.setSystemChannel(rulesChannel);
+    console.log(`✅ Regelkanal gesetzt: ${rulesChannel.name}`);
+    
+  } catch (error) {
+    console.error("❌ Fehler beim Aktivieren der Community-Funktion:", error);
+  }
+}
+
+// Nutze setupCommunity(guild) beim Start deines Bots
+
+
+## commits 
+```md
+
+Chore - cleanup, dependencies install
+CI - continious integration (pull request accepted - new version) - google cloud build & github actions
+Feat - feature, everything related to features
+Fix - bugfixing
+Perf - performance optimisation
+Refactor - beautify code
+Revert - revert code
+Style - code style updates
+Test - everything about testing
+
+```

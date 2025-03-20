@@ -1,148 +1,239 @@
 import { ChannelType, PermissionFlagsBits } from 'discord.js';
-import { setupConfig, saveConfig } from '../config/setupConfig.js';
+import { setupConfig, reloadConfig } from '../config/setupConfig.js';
+import * as db from '../db/database.js';
+import { getTranslation } from '../utils/translationHandler.js';
+import { reloadTicketListeners } from '../db/database.js';
 
-export function setupReactionListener(client) {
-  if (!client || typeof client.on !== 'function') {
-    console.error('❌ Fehler: `client` ist nicht korrekt initialisiert.');
-    return;
-  }
+export async function setupReactionListener(client) {
+  if (!client || typeof client.on !== 'function') return;
+
+  reloadConfig();
+  await reloadTicketListeners(client);
 
   client.on('messageReactionAdd', async (reaction, user) => {
     try {
       if (user.bot) return;
+      if (reaction.partial) await reaction.fetch();
+      if (reaction.message.partial) await reaction.message.fetch();
 
-      if (reaction.partial) {
-        await reaction.fetch();
-      }
-      if (reaction.message.partial) {
-        await reaction.message.fetch();
-      }
-
-      const ticketConfig = setupConfig.information.channels.ticketsupport;
-
-      if (
-        reaction.message.id !== ticketConfig.message.ID ||
-        reaction.message.channel.id !== ticketConfig.ID
-      ) {
-        return;
-      }
-
-      console.log(`🎟️ ${user.username} hat auf die Ticket-Nachricht reagiert.`);
+      const ticketConfig = setupConfig?.information?.channels?.ticketsupport;
+      const ticketData = db.getTicketData(user.id);
+      if (!ticketConfig?.message?.ID) return;
 
       const guild = reaction.message.guild;
       if (!guild) return;
 
-      const existingChannel = guild.channels.cache.find(
-        (channel) => channel.name === `ticket-${user.username.toLowerCase()}`
-      );
+      const member = await guild.members.fetch(user.id);
+      const hasTicketRole = member.roles.cache.has(setupConfig.role.ticket);
 
-      if (existingChannel) {
-        console.log(`⚠️ Ticket-Channel für ${user.username} existiert bereits.`);
-        await user.send(`⚠️ Du hast bereits ein offenes Ticket: ${existingChannel}`);
+      if (reaction.message.id === ticketConfig.message.ID) {
         await reaction.users.remove(user);
+        await handlerTicket(reaction, user);
         return;
       }
 
-      const ticketChannel = await guild.channels.create({
-        name: `ticket-${user.username}`,
-        type: ChannelType.GuildText,
-        parent: setupConfig.information.category.ID,
-        permissionOverwrites: [
-          {
-            id: guild.id,
-            deny: [PermissionFlagsBits.ViewChannel],
-          },
-          {
-            id: user.id,
-            allow: [
-              PermissionFlagsBits.ViewChannel,
-              PermissionFlagsBits.SendMessages,
-              PermissionFlagsBits.ReadMessageHistory,
-            ],
-          },
-          {
-            id: setupConfig.role.supporter,
-            allow: [
-              PermissionFlagsBits.ViewChannel,
-              PermissionFlagsBits.SendMessages,
-              PermissionFlagsBits.ReadMessageHistory,
-            ],
-          },
-        ],
-      });
-
-      console.log(
-        `✅ Ticket-Channel für ${user.username} erstellt: ${ticketChannel.name}`
-      );
-
-      const ticketMessage = await ticketChannel.send(
-        `👋 Hallo ${user}, ein Support-Mitarbeiter wird sich bald melden!\n\n📩 **Reagiere mit 🎟️, um das Ticket zu schließen.**`
-      );
-
-      await ticketMessage.react('🎟️');
-      await reaction.users.remove(user);
-
-      const closeTicket = async (reactionClose, userClose) => {
-        if (userClose.bot) return;
-        if (reactionClose.emoji.name !== '🎟️') return;
-
-        await ticketChannel.send(`🔒 Ticket wird geschlossen von ${userClose}.`);
-        setTimeout(async () => {
-          await ticketChannel.delete();
-          console.log(`🚫 Ticket-Channel ${ticketChannel.name} wurde geschlossen.`);
-        }, 5000);
-      };
-
-      const collector = ticketMessage.createReactionCollector({
-        filter: (reactionClose, userClose) => 
-          reactionClose.emoji.name === '🎟️' && 
-          userClose.id === user.id,
-      });
-
-      collector.on('collect', closeTicket);
-
+      if (
+        (ticketData && reaction.message.id === ticketData.ticket_message_id) ||
+        hasTicketRole
+      ) {
+        await reaction.users.remove(user);
+        await closeTicket(reaction.message.channel, user);
+      }
     } catch (error) {
-      console.error('❌ Fehler beim Erstellen des Ticket-Channels:', error);
+      console.error('Fehler bei der Verarbeitung der Reaktion:', error);
     }
   });
 
-  checkAndRestoreTicketMessage(client);
+  client.on('messageCreate', async (message) => {
+    if (message.author.bot) return;
+
+    const channelId = message.channel.id;
+    if (typeof db.getAllTickets !== 'function') return;
+
+    const tickets = await db.getAllTickets();
+    if (!tickets || Object.keys(tickets).length === 0) return;
+
+    const ticketEntry = Object.entries(tickets).find(
+      ([_, ticket]) => ticket.channel_id === channelId
+    );
+    if (!ticketEntry) return;
+
+    const [userId, ticketData] = ticketEntry;
+
+    const privilegedRoles = new Set([setupConfig.role.ticket]);
+
+    if (
+      message.member.roles.cache.some((role) => privilegedRoles.has(role.id))
+    ) {
+      const lastProblemId = getLastProblemId(ticketData);
+
+      if (
+        lastProblemId &&
+        ticketData.problems[lastProblemId]?.status === 'offen'
+      ) {
+        db.updateTicket(userId, lastProblemId, { status: 'bearbeitet' });
+      }
+    }
+  });
 }
 
-async function checkAndRestoreTicketMessage(client) {
-  const ticketConfig = setupConfig.information.channels.ticketsupport;
+async function closeTicket(channel, user) {
+  try {
+    await channel.send(
+      getTranslation('ticket', 'closed').replace('${user}', user.username)
+    );
+    setTimeout(async () => {
+      await channel.delete();
+      db.deleteTicket(user.id);
+    }, 5000);
+  } catch (error) {
+    console.error('Fehler beim Schließen des Tickets:', error);
+  }
+}
 
-  const channel = await client.channels.fetch(ticketConfig.ID);
-  if (!channel) {
-    console.error('❌ Fehler: Ticket-Support-Channel existiert nicht.');
+async function createChannel(user, reaction) {
+  const guild = reaction.message.guild;
+  if (!guild) return;
+
+  const ticketCategoryId = setupConfig.information.category.ID;
+  const ticketRoleId = setupConfig.role.ticekt;
+
+  const ticketChannel = await guild.channels.create({
+    name: `ticket-${user.username}`,
+    type: ChannelType.GuildText,
+    parent: ticketCategoryId,
+    permissionOverwrites: [
+      { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+      {
+        id: user.id,
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.SendMessages,
+          PermissionFlagsBits.ReadMessageHistory,
+        ],
+      },
+      {
+        id: ticketRoleId,
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.SendMessages,
+          PermissionFlagsBits.ReadMessageHistory,
+        ],
+      },
+    ],
+  });
+
+  const ticketMessage = await ticketChannel.send(
+    getTranslation('ticket', 'created')
+      .replace('${user}', user)
+      .replace(
+        '${reaction}',
+        setupConfig.information.channels.ticketsupport.REACTION
+      )
+  );
+  db.saveTicket(user.id, ticketChannel.id, ticketMessage.id);
+  db.updateTicket(user.id, '1', {
+    status: 'offen',
+    warning: false,
+    warnung_nachricht_id: '',
+  });
+  await ticketMessage.react(
+    setupConfig.information.channels.ticketsupport.REACTION
+  );
+}
+
+async function sendWarning(ticketData, userId, channel) {
+  try {
+    if (!channel) return;
+
+    const lastProblemId = getLastProblemId(ticketData);
+    if (!lastProblemId || !ticketData.problems[lastProblemId]) return;
+
+    const problem = ticketData.problems[lastProblemId];
+    if (problem.warning && problem.warnung_nachricht_id) {
+      try {
+        const oldWarning = await channel.messages.fetch(
+          problem.warnung_nachricht_id
+        );
+        if (oldWarning) await oldWarning.delete();
+      } catch (error) {
+        console.warn(
+          '⚠️ Warnungsnachricht konnte nicht gelöscht werden:',
+          error
+        );
+      }
+    }
+
+    const sendMessage = await channel.send(getTranslation('ticket', 'warning'));
+
+    db.updateTicket(userId, lastProblemId, {
+      warning: true,
+      warnung_nachricht_id: sendMessage.id,
+    });
+
+    return sendMessage.id;
+  } catch (err) {
+    console.error(`❌ Fehler beim Senden der Warnung:`, err);
+    return null;
+  }
+}
+
+function getLastProblemId(ticketData) {
+  if (
+    !ticketData ||
+    typeof ticketData !== 'object' ||
+    !ticketData.problems ||
+    Object.keys(ticketData.problems).length === 0
+  ) {
+    console.warn(
+      '⚠️ Warnung: `ticketData` ist ungültig oder leer.',
+      ticketData
+    );
+    return null;
+  }
+
+  return (
+    Object.keys(ticketData.problems)
+      .map(Number)
+      .filter(Number.isInteger)
+      .sort((a, b) => b - a)[0]
+      ?.toString() || null
+  );
+}
+
+function createNewProblem(userId, channel, user) {
+  let ticketData = db.getTicketData(userId);
+  const newProblemId = (Object.keys(ticketData).length + 1).toString();
+  db.updateTicket(userId, newProblemId, {
+    status: 'offen',
+    warning: false,
+    warnung_nachricht_id: '',
+  });
+  channel.send(getTranslation('ticket', 'reopen').replace('${user}', user.tag));
+}
+
+async function handlerTicket(reaction, user) {
+  let ticketData = db.getTicketData(user.id);
+  if (!ticketData) {
+    await createChannel(user, reaction);
     return;
   }
 
-  try {
-    const message = await channel.messages.fetch(ticketConfig.message.ID);
+  const channel = reaction.message.guild.channels.cache.get(
+    ticketData.channel_id
+  );
+  if (!channel) return;
 
-    if (message) {
-      const hasReaction = message.reactions.cache.some(
-        (reaction) => reaction.emoji.name === ticketConfig.REACTION
-      );
-
-      if (!hasReaction) {
-        await message.react(ticketConfig.REACTION);
-        console.log(`✅ Reaktion "${ticketConfig.REACTION}" zur Nachricht hinzugefügt.`);
-      } else {
-        console.log(`🔄 Reaktion "${ticketConfig.REACTION}" ist bereits vorhanden.`);
-      }
-    } else {
-      console.warn('⚠️ Ticket-Nachricht existiert nicht mehr. Erstelle neu...');
-      const newMessage = await channel.send(ticketConfig.message.MESSAGE);
-      ticketConfig.message.ID = newMessage.id;
-      await newMessage.react(ticketConfig.REACTION);
-      saveConfig();
-      console.log(`✅ Ticket-Nachricht neu erstellt und ID gespeichert: ${newMessage.id}`);
-    }
-  } catch (error) {
-    console.warn('⚠️ Fehler beim Überprüfen der Ticket-Nachricht:', error);
+  const lastProblemId = getLastProblemId(ticketData);
+  if (!lastProblemId || !ticketData.problems[lastProblemId]) {
+    console.warn(`⚠️ Kein gültiges Problem für ${user.username} gefunden.`);
+    return;
   }
 
-  setTimeout(() => checkAndRestoreTicketMessage(client), 60000);
+  const problem = ticketData.problems[lastProblemId];
+  if (problem.status === 'offen') {
+    await sendWarning(ticketData, user.id, channel);
+  } else {
+    createNewProblem(user.id, channel, user);
+  }
 }

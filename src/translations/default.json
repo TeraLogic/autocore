@@ -1,15 +1,57 @@
 {
   "ticket": {
     "message": "🎟️ **Reagiere mit dem Emoji, um ein Ticket zu erstellen.**",
-    "created": "✅ Dein Ticket wurde erfolgreich erstellt.",
-    "closed": "❌ Das Ticket wurde geschlossen."
+    "created": "🚀 Hallo ${user}, dein Ticket wurde erfolgreich erstellt! Reagiere mit ${reaction}, um es zu schließen.",
+    "closed": "🔒 Ticket wird geschlossen von ${user}.",
+    "warning": "⚠️ **Der Support weiß bereits über dein Anliegen Bescheid. Bitte keine weiteren Tickets fordern.**",
+    "reopen": "📌 **${user} hat ein neues Problem gemeldet.**"
   },
   "welcome": {
     "message": "👋 Willkommen auf unserem Server! Schau dich um und hab Spaß."
   },
   "rules": {
-    "rule1": "🚫 Keine Beleidigungen oder toxisches Verhalten.",
-    "rule2": "📌 Halte dich an die Discord TOS.",
-    "rule3": "🔊 Nutze die Kanäle für den vorgesehenen Zweck."
+    "title": "TERALOGIC - RULES",
+    "sections": {
+      "general_behavior": {
+        "title": "§1. General Behavior",
+        "rules": [
+          "**Be respectful:** Treat others kindly. No insults or discrimination.",
+          "**No advertising:** Only promote in designated channels.",
+          "**No spam:** Avoid sending repetitive messages, emojis, or irrelevant links.",
+          "**No personal attacks:** Keep discussions respectful and on-topic."
+        ]
+      },
+      "support": {
+        "title": "§2. Support",
+        "rules": [
+          "**Ask clear questions:** Provide enough detail for troubleshooting (error messages, screenshots, etc.).",
+          "**Use the correct channel:** Post questions in relevant channels (**#bug-reports**).",
+          "**Provide detailed bug reports:** Include all necessary information (bot name, steps to reproduce, error messages).",
+          "**Follow Discord’s Terms of Service:** Do not misuse bots or violate Discord rules."
+        ]
+      },
+      "channel_usage": {
+        "title": "§3. Channel Usage",
+        "rules": [
+          "**Voice-Channel:** Use voice channels for conversations.",
+          "**No cross-posting:** Avoid posting the same content in multiple channels."
+        ]
+      },
+      "privacy_security": {
+        "title": "§4. Privacy & Security",
+        "rules": [
+          "**No personal info sharing:** Don’t share sensitive details (passwords, emails, etc.).",
+          "**Stay safe:** Avoid clicking on suspicious links."
+        ]
+      },
+      "violations": {
+        "title": "§5. Violations",
+        "rules": [
+          "**Penalties:** Breaking the rules can lead to warnings, temporary bans, or permanent bans.",
+          "**Reports:** Report violations to moderators via our ticket system."
+        ]
+      }
+    },
+    "footer": "Enjoy your time and thank you for following the rules!"
   }
 }

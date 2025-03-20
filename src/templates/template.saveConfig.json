@@ -12,45 +12,46 @@
   },
   "information": {
     "category": {
-      "ID": null,
+      "ID": "",
       "NAME": "»› INFORMATION ‹«",
-      "TYPE": "4"
+      "TYPE": "4",
+      "POSITION": 0
     },
     "channels": {
       "announcements": {
-        "ID": null,
+        "ID": "",
         "NAME": "📢│announcements",
         "TYPE": "0",
         "message": {
-          "ID": null,
+          "ID": "",
           "MESSAGE": "Announcement test Text!"
         }
       },
       "changelog": {
-        "ID": null,
+        "ID": "",
         "NAME": "🪛│changelog",
         "TYPE": "0",
         "message": {
-          "ID": null,
+          "ID": "",
           "MESSAGE": "test"
         }
       },
       "partner": {
-        "ID": null,
+        "ID": "",
         "NAME": "🔗│partner",
         "TYPE": "0",
         "message": {
-          "ID": null,
+          "ID": "",
           "MESSAGE": "Willkommen im Partnerkanal! Hier findet ihr unsere Partner."
         }
       },
       "ticketsupport": {
-        "ID": null,
+        "ID": "",
         "NAME": "🎫│ticket-support",
         "TYPE": "0",
         "REACTION": "🎟️",
         "message": {
-          "ID": null,
+          "ID": "",
           "MESSAGE": "Reagiere mit 🎟️, um ein Support-Ticket zu eröffnen."
         }
       }
